@@ -88,12 +88,16 @@ lib.callback.register('zab_pawnshop:sellItem', function(source, itemName, quanti
         return {success = false, message = "Failed to remove item"}
     end
     
-    -- Add money to player
+    -- Add money to player using ox_inventory
     local moneyAdded = false
     if Config.Currency == "cash" then
-        moneyAdded = Player.Functions.AddMoney('cash', totalPrice)
+        moneyAdded = exports.ox_inventory:AddItem(source, 'money', totalPrice)
     elseif Config.Currency == "bank" then
+        -- For bank, still use QBCore as it's account-based
         moneyAdded = Player.Functions.AddMoney('bank', totalPrice)
+    else
+        -- For custom currency, use ox_inventory
+        moneyAdded = exports.ox_inventory:AddItem(source, Config.Currency, totalPrice)
     end
     
     if not moneyAdded then
@@ -106,10 +110,20 @@ lib.callback.register('zab_pawnshop:sellItem', function(source, itemName, quanti
     print(string.format("[PAWNSHOP] Player %s (%s) sold %dx %s for $%d", 
         Player.PlayerData.name, Player.PlayerData.citizenid, quantity, itemName, totalPrice))
     
+    -- Get updated balance
+    local newBalance = 0
+    if Config.Currency == "bank" then
+        newBalance = Player.PlayerData.money.bank or 0
+    else
+        -- For cash/custom currency, get from ox_inventory
+        local moneyCount = exports.ox_inventory:GetItemCount(source, Config.Currency == "cash" and "money" or Config.Currency)
+        newBalance = moneyCount or 0
+    end
+    
     return {
         success = true, 
         message = string.format("Sold %dx %s for $%d", quantity, result.label, totalPrice),
-        newBalance = Player.PlayerData.money[Config.Currency]
+        newBalance = newBalance
     }
 end)
 
