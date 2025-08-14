@@ -178,8 +178,20 @@ Config.SellerQuotes = {
     "Fair prices for fair goods"
 }
 
+-- Bulk Discount System
+Config.BulkDiscount = {
+    enabled = true,                    -- Enable/disable bulk discount system
+    itemsNeededForDiscount = 5,        -- Minimum items needed for discount
+    discountPercent = 0.15,            -- Discount percentage (0.15 = 15% off)
+    showDiscountText = true            -- Show discount notification
+}
+
+-- Pawnshop Features
+Config.EnableBuying = false -- Set to false to disable buying from pawnshop (sell-only mode)
+
 -- Security Settings
 Config.MaxTransactionAmount = 10000 -- Maximum single transaction
+Config.MaxBuyQuantity = 100 -- Maximum quantity that can be bought in one transaction
 Config.CooldownTime = 5000 -- 5 seconds between transactions
 Config.RequireJob = false -- Set to job name if you want to restrict access
 Config.AllowedJobs = {} -- {"police", "mechanic"} example

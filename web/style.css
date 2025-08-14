@@ -540,6 +540,31 @@ body {
     background: rgba(0, 0, 0, 0.3);
     border-radius: 16px;
     pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.lock-icon {
+    width: 50px;
+    height: 50px;
+    background: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+}
+
+.lock-text {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .item-header {
@@ -904,13 +929,34 @@ body {
     margin-bottom: 0;
 }
 
-.price-row.total {
-    font-weight: 700;
+.price-row.sell {
+    font-weight: 600;
     font-size: 16px;
     color: var(--success);
-    border-top: 1px solid var(--border-color);
-    padding-top: 8px;
-    margin-top: 8px;
+}
+
+.price-row.buy {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--warning);
+}
+
+.discount-info {
+    text-align: center;
+    padding: 8px;
+    margin: 8px 0;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid var(--success);
+    border-radius: 6px;
+    color: var(--success);
+    font-size: 14px;
+    font-weight: 600;
+    animation: discountPulse 0.5s ease;
+}
+
+@keyframes discountPulse {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 .modal-actions {

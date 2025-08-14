@@ -41,13 +41,7 @@ class PawnshopUI {
             this.closeQuantityModal();
         });
 
-        document.getElementById('cancel-sell').addEventListener('click', () => {
-            this.closeQuantityModal();
-        });
-
-        document.getElementById('confirm-sell').addEventListener('click', () => {
-            this.confirmSale();
-        });
+        // Modal button event listeners are now handled dynamically in setupModalButtons()
 
         // Quantity controls
         document.getElementById('quantity-decrease').addEventListener('click', () => {
@@ -59,7 +53,28 @@ class PawnshopUI {
         });
 
         document.getElementById('quantity-input').addEventListener('input', (e) => {
-            this.updateQuantity(parseInt(e.target.value) || 1);
+            const value = parseInt(e.target.value);
+            
+            if (value && value > 0) {
+                if (this.config?.enableBuying) {
+                    // In buy mode, limit to maxBuyQuantity
+                    const maxBuy = this.config?.maxBuyQuantity || 100;
+                    if (value > maxBuy) {
+                        e.target.value = maxBuy;
+                    }
+                } else {
+                    // In sell-only mode, limit to what player owns
+                    const playerOwns = this.currentModalItem?.count || 0;
+                    if (value > playerOwns) {
+                        e.target.value = playerOwns;
+                    }
+                }
+                this.updateQuantityPreview();
+            } else {
+                // If invalid input, reset to 1
+                e.target.value = 1;
+                this.updateQuantityPreview();
+            }
         });
 
         // ESC key to close
@@ -242,8 +257,7 @@ class PawnshopUI {
 
     createItemElement(item) {
         const element = document.createElement('div');
-        const isLocked = item.locked || item.count === 0;
-        element.className = `item-card ${this.selectedItems.has(item.item) ? 'selected' : ''} ${isLocked ? 'locked' : ''}`;
+        element.className = `item-card ${this.selectedItems.has(item.item) ? 'selected' : ''} ${item.isLocked ? 'locked' : ''}`;
         element.dataset.item = item.item;
 
         const imagePath = `nui://ox_inventory/web/images/${item.image}`;
@@ -253,7 +267,6 @@ class PawnshopUI {
                 <div class="item-image">
                     <img src="${imagePath}" alt="${item.label}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <i class="fas fa-cube" style="display: none;"></i>
-                    ${isLocked ? '<div class="lock-overlay"><i class="fas fa-lock"></i></div>' : ''}
                 </div>
                 <div class="item-info">
                     <div class="item-name">${item.label}</div>
@@ -267,17 +280,16 @@ class PawnshopUI {
             </div>
             
             <div class="item-actions">
-                <button class="item-btn sell-btn ${isLocked ? 'disabled' : ''}" ${isLocked ? 'disabled' : ''}>
-                    <i class="fas fa-${isLocked ? 'lock' : 'handshake'}"></i>
-                    ${isLocked ? 'Not Available' : 'Sell Item'}
+                <button class="item-btn sell-btn ${item.isLocked ? 'disabled' : ''}">
+                    <i class="fas fa-eye"></i>
+                    View
                 </button>
             </div>
-            
-            ${isLocked ? '<div class="item-locked-overlay"></div>' : ''}
+            ${item.isLocked ? '<div class="item-locked-overlay"><div class="lock-icon"><i class="fas fa-lock"></i></div><div class="lock-text">Not Available</div></div>' : ''}
         `;
 
-        // Add click handlers only if not locked
-        if (!isLocked) {
+        // Add click handlers based on locked state
+        if (!item.isLocked) {
             element.querySelector('.sell-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openQuantityModal(item);
@@ -286,40 +298,13 @@ class PawnshopUI {
             element.addEventListener('click', () => {
                 this.toggleItemSelection(item.item);
             });
-        } else {
-            // Show tooltip for locked items
-            element.addEventListener('click', () => {
-                // Send message to client to show ox_lib notification
-                fetch(`https://${GetParentResourceName()}/showNotification`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: `You don't have any ${item.label} to sell`,
-                        type: 'warning'
-                    })
-                });
-            });
         }
 
         return element;
     }
 
     toggleItemSelection(itemName) {
-        // Check if item is locked
-        const item = this.items.find(i => i.item === itemName);
-        if (item && (item.locked || item.count === 0)) {
-            // Send message to client to show ox_lib notification
-            fetch(`https://${GetParentResourceName()}/showNotification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: `You don't have any ${item.label} to sell`,
-                    type: 'warning'
-                })
-            });
-            return;
-        }
-
+        // All items can be selected for viewing - no restrictions
         if (this.selectedItems.has(itemName)) {
             this.selectedItems.delete(itemName);
         } else {
@@ -353,6 +338,10 @@ class PawnshopUI {
         this.currentModalItem = item;
         
         // Update modal content
+        const maxInfo = this.config?.enableBuying 
+            ? `Max buy: ${this.config?.maxBuyQuantity || 100}` 
+            : `Max sell: ${Math.min(item.count, item.maxQuantity)}`;
+            
         document.getElementById('modal-item-preview').innerHTML = `
             <div class="preview-image">
                 <img src="nui://ox_inventory/web/images/${item.image}" alt="${item.label}" 
@@ -361,23 +350,73 @@ class PawnshopUI {
             </div>
             <div class="preview-info">
                 <h4>${item.label}</h4>
-                <p>Available: ${item.count} | Max per transaction: ${item.maxQuantity}</p>
+                <p>Available: ${item.count} | ${maxInfo}</p>
             </div>
         `;
 
         // Set quantity limits
-        const maxQuantity = Math.min(item.count, item.maxQuantity);
         const quantityInput = document.getElementById('quantity-input');
-        quantityInput.max = maxQuantity;
         quantityInput.value = 1;
         
         document.getElementById('available-quantity').textContent = item.count;
-        document.getElementById('max-quantity').textContent = item.maxQuantity;
+        document.getElementById('max-quantity').textContent = this.config?.enableBuying 
+            ? (this.config?.maxBuyQuantity || 100) 
+            : Math.min(item.count, item.maxQuantity);
+        
+        // Setup modal buttons based on config
+        this.setupModalButtons();
         
         this.updateQuantityPreview();
         
         // Show modal
         document.getElementById('quantity-modal').classList.remove('hidden');
+    }
+
+    setupModalButtons() {
+        const modalActions = document.getElementById('modal-actions');
+        
+        if (this.config?.enableBuying) {
+            // Buy & Sell mode
+            modalActions.innerHTML = `
+                <button class="modal-btn secondary" id="dynamic-sell-btn">
+                    <i class="fas fa-handshake"></i>
+                    SELL
+                </button>
+                <button class="modal-btn primary" id="dynamic-buy-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    BUY
+                </button>
+            `;
+            
+            // Add event listeners
+            document.getElementById('dynamic-sell-btn').addEventListener('click', () => {
+                this.confirmSale();
+            });
+            
+            document.getElementById('dynamic-buy-btn').addEventListener('click', () => {
+                this.confirmBuy();
+            });
+        } else {
+            // Sell-only mode
+            modalActions.innerHTML = `
+                <button class="modal-btn secondary" id="dynamic-cancel-btn">
+                    Cancel
+                </button>
+                <button class="modal-btn primary" id="dynamic-sell-btn">
+                    <i class="fas fa-handshake"></i>
+                    SELL
+                </button>
+            `;
+            
+            // Add event listeners
+            document.getElementById('dynamic-cancel-btn').addEventListener('click', () => {
+                this.closeQuantityModal();
+            });
+            
+            document.getElementById('dynamic-sell-btn').addEventListener('click', () => {
+                this.confirmSale();
+            });
+        }
     }
 
     closeQuantityModal() {
@@ -388,37 +427,103 @@ class PawnshopUI {
     adjustQuantity(change) {
         const input = document.getElementById('quantity-input');
         const currentValue = parseInt(input.value) || 1;
-        const newValue = Math.max(1, Math.min(parseInt(input.max), currentValue + change));
+        let newValue = currentValue + change;
+        
+        // Always keep minimum of 1
+        newValue = Math.max(1, newValue);
+        
+        if (this.config?.enableBuying) {
+            // In buy mode, limit to maxBuyQuantity
+            const maxBuy = this.config?.maxBuyQuantity || 100;
+            newValue = Math.min(maxBuy, newValue);
+        } else {
+            // In sell-only mode, limit to what player owns
+            const playerOwns = this.currentModalItem?.count || 0;
+            newValue = Math.min(playerOwns, newValue);
+        }
         
         input.value = newValue;
         this.updateQuantityPreview();
     }
 
-    updateQuantity(value) {
-        const input = document.getElementById('quantity-input');
-        const maxValue = parseInt(input.max);
-        const newValue = Math.max(1, Math.min(maxValue, value));
-        
-        input.value = newValue;
-        this.updateQuantityPreview();
-    }
+    // Removed updateQuantity function - users can now type freely
 
     updateQuantityPreview() {
         if (!this.currentModalItem) return;
         
         const quantity = parseInt(document.getElementById('quantity-input').value) || 1;
-        const unitPrice = this.currentModalItem.price;
-        const totalPrice = unitPrice * quantity;
+        const sellPrice = this.currentModalItem.price;
+        const buyPrice = Math.round(sellPrice * 1.4); // 40% markup for buying
         
-        document.getElementById('unit-price').textContent = `$${unitPrice.toLocaleString()}`;
-        document.getElementById('total-price').textContent = `$${totalPrice.toLocaleString()}`;
+        let sellTotal = sellPrice * quantity;
+        let buyTotal = buyPrice * quantity;
+        let discountApplied = false;
+        let discountPercent = 0;
+        
+        // Check if bulk discount applies (only for selling)
+        if (this.config && this.config.bulkDiscount && this.config.bulkDiscount.enabled) {
+            if (quantity >= this.config.bulkDiscount.itemsNeededForDiscount) {
+                discountPercent = this.config.bulkDiscount.discountPercent;
+                const discountAmount = sellTotal * discountPercent;
+                sellTotal = sellTotal - discountAmount;
+                discountApplied = true;
+            }
+        }
+        
+        if (this.config?.enableBuying) {
+            // Show both prices when buying is enabled
+            document.getElementById('sell-price').textContent = `$${Math.round(sellTotal).toLocaleString()}`;
+            document.getElementById('buy-price').textContent = `$${buyTotal.toLocaleString()}`;
+        } else {
+            // Show only sell price when buying is disabled
+            document.getElementById('sell-price').textContent = `$${Math.round(sellTotal).toLocaleString()}`;
+            const buyPriceElement = document.getElementById('buy-price');
+            if (buyPriceElement) {
+                buyPriceElement.parentElement.style.display = 'none';
+            }
+        }
+        
+        // Show/hide discount info
+        const discountInfo = document.getElementById('discount-info');
+        if (discountInfo) {
+            if (discountApplied) {
+                const discountPercentText = Math.floor(discountPercent * 100);
+                discountInfo.textContent = `Discount applied: ${discountPercentText}%`;
+                discountInfo.style.display = 'block';
+            } else {
+                discountInfo.style.display = 'none';
+            }
+        }
     }
 
     confirmSale() {
         if (!this.currentModalItem) return;
         
         const quantity = parseInt(document.getElementById('quantity-input').value) || 1;
+        
+        // Check if player has enough items to sell
+        if (this.currentModalItem.count < quantity) {
+            // Send message to client to show ox_lib notification
+            fetch(`https://${GetParentResourceName()}/showNotification`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: `You can't sell more than you have! You only have ${this.currentModalItem.count} ${this.currentModalItem.label}`,
+                    type: 'error'
+                })
+            });
+            return;
+        }
+        
         this.sellItem(this.currentModalItem.item, quantity);
+        this.closeQuantityModal();
+    }
+
+    confirmBuy() {
+        if (!this.currentModalItem) return;
+        
+        const quantity = parseInt(document.getElementById('quantity-input').value) || 1;
+        this.buyItem(this.currentModalItem.item, quantity);
         this.closeQuantityModal();
     }
 
@@ -438,6 +543,26 @@ class PawnshopUI {
         })
         .catch(error => {
             console.error('Error selling item:', error);
+            if (callback) callback();
+        });
+    }
+
+    buyItem(itemName, quantity, callback) {
+        fetch(`https://${GetParentResourceName()}/buyItem`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                item: itemName,
+                quantity: quantity
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            // Let the client-side handle notifications via ox_lib
+            if (callback) callback();
+        })
+        .catch(error => {
+            console.error('Error buying item:', error);
             if (callback) callback();
         });
     }

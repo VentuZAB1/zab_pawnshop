@@ -86,6 +86,8 @@ function openPawnshop()
             return
         end
         
+
+        
         isUIOpen = true
         SetNuiFocus(true, true)
         
@@ -97,7 +99,10 @@ function openPawnshop()
                     currency = Config.Currency,
                     categories = Config.Categories,
                     ui = Config.UI,
-                    sellerQuotes = Config.SellerQuotes
+                    sellerQuotes = Config.SellerQuotes,
+                    bulkDiscount = Config.BulkDiscount,
+                    maxBuyQuantity = Config.MaxBuyQuantity,
+                    enableBuying = Config.EnableBuying
                 },
                 items = playerItems
             }
@@ -141,6 +146,44 @@ RegisterNUICallback('sellItem', function(data, cb)
             })
             
             -- Refresh items after successful sale
+            lib.callback('zab_pawnshop:getPlayerItems', false, function(playerItems)
+                SendNUIMessage({
+                    action = 'updateItems',
+                    data = {
+                        items = playerItems or {}
+                    }
+                })
+            end)
+        else
+            lib.notify({
+                title = 'Pawnshop',
+                description = result.message,
+                type = 'error'
+            })
+        end
+        
+        cb(result)
+    end, itemName, quantity)
+end)
+
+RegisterNUICallback('buyItem', function(data, cb)
+    local itemName = data.item
+    local quantity = data.quantity
+    
+    if not itemName or not quantity or quantity <= 0 then
+        cb({success = false, message = "Invalid data"})
+        return
+    end
+    
+    lib.callback('zab_pawnshop:buyItem', false, function(result)
+        if result.success then
+            lib.notify({
+                title = 'Pawnshop',
+                description = result.message,
+                type = 'success'
+            })
+            
+            -- Refresh items after successful purchase
             lib.callback('zab_pawnshop:getPlayerItems', false, function(playerItems)
                 SendNUIMessage({
                     action = 'updateItems',

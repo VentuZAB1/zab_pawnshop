@@ -5,7 +5,7 @@
 ![FiveM](https://img.shields.io/badge/FiveM-Compatible-blue?style=for-the-badge&logo=fivem)
 ![QBox](https://img.shields.io/badge/QBox-Framework-purple?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.0.0-orange?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.2.0-orange?style=for-the-badge)
 
 **A premium pawnshop system for QBox Framework featuring a sleek, modern tech UI with professional design and bulletproof security.**
 
@@ -28,6 +28,8 @@ ZAB Pawnshop transforms the traditional pawnshop experience with a cutting-edge 
 - **Dual View Modes** - Switch between grid and list layouts
 - **Real-time Search** - Instant item filtering and categorization
 - **Dynamic Quotes** - Randomized seller dialogue for immersion
+- **Smart Item Locking** - Visual indicators for unavailable items
+- **Buy/Sell Modes** - Configurable buying and selling functionality
 
 ### 🔒 **Enterprise Security**
 - **Multi-layer Validation** - Server-side verification of all transactions
@@ -44,6 +46,9 @@ ZAB Pawnshop transforms the traditional pawnshop experience with a cutting-edge 
 - **Multiple Locations** - Support for multiple pawnshop branches
 - **Currency Options** - Cash, bank, or custom currency support
 - **Flexible Pricing** - Individual item pricing and quantity limits
+- **Bulk Discounts** - Configurable volume-based pricing incentives
+- **Buy/Sell Toggle** - Enable full marketplace or sell-only mode
+- **Smart Quantity Limits** - Inventory-based or configured maximums
 
 ### 🛠️ **Framework Integration**
 - **QBox Framework** - Native QBCore compatibility
@@ -114,6 +119,22 @@ Config.SellerQuotes = {
 }
 ```
 
+### Bulk Discount System
+```lua
+Config.BulkDiscount = {
+    enabled = true,                    -- Enable bulk discounts
+    itemsNeededForDiscount = 5,        -- Minimum items for discount
+    discountPercent = 0.1,             -- 10% discount
+    showDiscountText = true            -- Show discount info in UI
+}
+```
+
+### Buy/Sell Mode Configuration
+```lua
+Config.EnableBuying = false            -- Set to true for full marketplace
+Config.MaxBuyQuantity = 100            -- Maximum items to buy per transaction
+```
+
 ### UI Theme Customization
 ```lua
 Config.UI = {
@@ -142,9 +163,10 @@ Our security system implements multiple layers of protection:
 1. **Approach** any pawnshop location
 2. **Interact** with the NPC or press `E`
 3. **Browse** items by category or use search
-4. **Select** items to sell (supports multi-select)
-5. **Choose** quantity in the modal
-6. **Confirm** transaction and receive payment
+4. **Click** items to view details
+5. **Choose** quantity and action (Buy/Sell)
+6. **Confirm** transaction and receive payment/items
+7. **Benefit** from bulk discounts on large sales
 
 ### For Administrators
 - **Configure** items and prices in `config.lua`
@@ -189,7 +211,16 @@ We welcome contributions! Please:
 
 ## 📋 **Changelog**
 
-### v1.0.0 (Latest)
+### v1.2.0 (Latest)
+- 🆕 **Buy/Sell Mode Toggle** - Configurable marketplace or sell-only mode
+- 🆕 **Bulk Discount System** - Volume-based pricing incentives
+- 🆕 **Smart Item Locking** - Visual indicators for unavailable items
+- 🆕 **Flexible Quantity Input** - Manual typing with inventory limits
+- 🆕 **Dynamic Price Display** - Separate buy/sell pricing
+- 🔧 **Enhanced UI Controls** - Improved quantity management
+- 🔧 **Better Input Validation** - Inventory-based quantity limits
+
+### v1.0.0
 - ✅ Initial release
 - ✅ Modern tech UI with purple theme
 - ✅ QBox Framework integration

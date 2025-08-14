@@ -2,7 +2,7 @@ local qbx = require '@qbx_core/modules/lib'
 local playerCooldowns = {}
 
 -- Security: Validate player and transaction
-local function validateTransaction(source, itemName, quantity, totalPrice)
+local function validateTransaction(source, itemName, quantity, totalPrice, basePrice)
     local Player = exports.qbx_core:GetPlayer(source)
     if not Player then return false, "Player not found" end
     
@@ -30,9 +30,18 @@ local function validateTransaction(source, itemName, quantity, totalPrice)
         return false, "Invalid quantity"
     end
     
-    -- Validate price calculation
-    local expectedPrice = itemConfig.price * quantity
-    if totalPrice ~= expectedPrice then
+    -- Validate price calculation (with potential bulk discount)
+    local expectedBasePrice = itemConfig.price * quantity
+    local expectedFinalPrice = expectedBasePrice
+    
+    -- Check if bulk discount should be applied
+    if Config.BulkDiscount.enabled and quantity >= Config.BulkDiscount.itemsNeededForDiscount then
+        local discountAmount = expectedBasePrice * Config.BulkDiscount.discountPercent
+        expectedFinalPrice = expectedBasePrice - discountAmount
+    end
+    
+    -- Allow small rounding differences
+    if math.abs(totalPrice - expectedFinalPrice) > 0.01 then
         return false, "Price mismatch"
     end
     
@@ -65,15 +74,34 @@ lib.callback.register('zab_pawnshop:sellItem', function(source, itemName, quanti
     local Player = exports.qbx_core:GetPlayer(source)
     if not Player then return {success = false, message = "Player not found"} end
     
-    local totalPrice = 0
+    local basePrice = 0
     for _, item in pairs(Config.Items) do
         if item.item == itemName then
-            totalPrice = item.price * quantity
+            basePrice = item.price
             break
         end
     end
     
-    local isValid, result = validateTransaction(source, itemName, quantity, totalPrice)
+    local totalPrice = basePrice * quantity
+    local discountApplied = false
+    local discountPercent = 0
+    
+    -- Apply bulk discount if enabled and conditions are met
+    print(string.format("[PAWNSHOP DEBUG] Checking discount: enabled=%s, quantity=%d, required=%d", 
+        tostring(Config.BulkDiscount.enabled), quantity, Config.BulkDiscount.itemsNeededForDiscount))
+    
+    if Config.BulkDiscount.enabled and quantity >= Config.BulkDiscount.itemsNeededForDiscount then
+        discountPercent = Config.BulkDiscount.discountPercent
+        local discountAmount = totalPrice * discountPercent
+        totalPrice = totalPrice - discountAmount
+        discountApplied = true
+        print(string.format("[PAWNSHOP DEBUG] Discount applied! %d%% off, original: $%d, discounted: $%d", 
+            math.floor(discountPercent * 100), basePrice * quantity, totalPrice))
+    else
+        print("[PAWNSHOP DEBUG] No discount applied")
+    end
+    
+    local isValid, result = validateTransaction(source, itemName, quantity, totalPrice, basePrice)
     if not isValid then
         return {success = false, message = result}
     end
@@ -120,10 +148,19 @@ lib.callback.register('zab_pawnshop:sellItem', function(source, itemName, quanti
         newBalance = moneyCount or 0
     end
     
+    -- Create success message
+    local message = string.format("Sold %dx %s for $%d", quantity, result.label, totalPrice)
+    if discountApplied and Config.BulkDiscount.showDiscountText then
+        local discountPercentText = math.floor(discountPercent * 100)
+        message = message .. string.format(" (Discount applied: %d%%)", discountPercentText)
+    end
+    
     return {
         success = true, 
-        message = string.format("Sold %dx %s for $%d", quantity, result.label, totalPrice),
-        newBalance = newBalance
+        message = message,
+        newBalance = newBalance,
+        discountApplied = discountApplied,
+        discountPercent = discountApplied and math.floor(discountPercent * 100) or 0
     }
 end)
 
@@ -135,7 +172,7 @@ lib.callback.register('zab_pawnshop:getPlayerItems', function(source)
     local playerItems = {}
     local inventory = exports.ox_inventory:GetInventoryItems(source)
     
-    -- Show all config items, but only from enabled categories
+    -- Show config items based on buying mode
     for _, configItem in pairs(Config.Items) do
         -- Check if the category is enabled
         local categoryEnabled = false
@@ -165,6 +202,19 @@ lib.callback.register('zab_pawnshop:getPlayerItems', function(source)
             end
         end
         
+        -- Items are always shown, but locked state depends on buying mode
+        
+        -- Determine if item should be locked based on buying mode
+        local isLocked = false
+        if Config.EnableBuying then
+            -- In buy mode, items are never visually locked (players can buy them)
+            -- But selling validation happens in confirmSale()
+            isLocked = false
+        else
+            -- In sell-only mode, lock if player doesn't have item (can't sell, can't buy)
+            isLocked = not hasItem
+        end
+        
         table.insert(playerItems, {
             item = configItem.item,
             label = configItem.label,
@@ -174,13 +224,105 @@ lib.callback.register('zab_pawnshop:getPlayerItems', function(source)
             category = configItem.category,
             image = configItem.image,
             hasItem = hasItem,
-            locked = not hasItem
+            isLocked = isLocked
         })
         
         ::continue::
     end
     
     return playerItems
+end)
+
+-- Secure callback for buying items from pawnshop
+lib.callback.register('zab_pawnshop:buyItem', function(source, itemName, quantity)
+    local Player = exports.qbx_core:GetPlayer(source)
+    if not Player then return {success = false, message = "Player not found"} end
+    
+    -- Find item in config
+    local itemConfig = nil
+    for _, item in pairs(Config.Items) do
+        if item.item == itemName then
+            itemConfig = item
+            break
+        end
+    end
+    
+    if not itemConfig then
+        return {success = false, message = "Item not available for purchase"}
+    end
+    
+    -- Check cooldown
+    local playerId = Player.PlayerData.citizenid
+    if playerCooldowns[playerId] and (GetGameTimer() - playerCooldowns[playerId]) < Config.CooldownTime then
+        return {success = false, message = "Transaction cooldown active"}
+    end
+    
+    -- Validate quantity
+    if quantity <= 0 then
+        return {success = false, message = "Invalid quantity"}
+    end
+    
+    -- Check max buy quantity
+    if quantity > Config.MaxBuyQuantity then
+        return {success = false, message = string.format("Maximum buy quantity is %d per transaction", Config.MaxBuyQuantity)}
+    end
+    
+    local buyPrice = math.floor(itemConfig.price * 1.4) -- 40% markup for buying
+    local totalPrice = buyPrice * quantity
+    
+    -- Check if player has enough money
+    local playerMoney = 0
+    if Config.Currency == "cash" then
+        playerMoney = exports.ox_inventory:GetItemCount(source, 'money') or 0
+    elseif Config.Currency == "bank" then
+        playerMoney = Player.PlayerData.money.bank or 0
+    else
+        playerMoney = exports.ox_inventory:GetItemCount(source, Config.Currency) or 0
+    end
+    
+    if playerMoney < totalPrice then
+        return {success = false, message = "Insufficient funds"}
+    end
+    
+    -- Remove money from player
+    local moneyRemoved = false
+    if Config.Currency == "cash" then
+        moneyRemoved = exports.ox_inventory:RemoveItem(source, 'money', totalPrice)
+    elseif Config.Currency == "bank" then
+        moneyRemoved = Player.Functions.RemoveMoney('bank', totalPrice)
+    else
+        moneyRemoved = exports.ox_inventory:RemoveItem(source, Config.Currency, totalPrice)
+    end
+    
+    if not moneyRemoved then
+        return {success = false, message = "Failed to process payment"}
+    end
+    
+    -- Add item to player inventory
+    local itemAdded = exports.ox_inventory:AddItem(source, itemName, quantity)
+    if not itemAdded then
+        -- Rollback: give money back
+        if Config.Currency == "cash" then
+            exports.ox_inventory:AddItem(source, 'money', totalPrice)
+        elseif Config.Currency == "bank" then
+            Player.Functions.AddMoney('bank', totalPrice)
+        else
+            exports.ox_inventory:AddItem(source, Config.Currency, totalPrice)
+        end
+        return {success = false, message = "Failed to add item to inventory"}
+    end
+    
+    -- Set cooldown
+    playerCooldowns[playerId] = GetGameTimer()
+    
+    -- Log transaction
+    print(string.format("[PAWNSHOP] Player %s (%s) bought %dx %s for $%d", 
+        Player.PlayerData.name, Player.PlayerData.citizenid, quantity, itemName, totalPrice))
+    
+    return {
+        success = true,
+        message = string.format("Purchased %dx %s for $%d", quantity, itemConfig.label, totalPrice)
+    }
 end)
 
 -- Security: Anti-spam protection

@@ -132,23 +132,22 @@
                     </div>
                     
                     <div class="price-preview">
-                        <div class="price-row">
-                            <span>Unit Price:</span>
-                            <span id="unit-price">$0</span>
+                        <div class="price-row sell">
+                            <span>Sell Price:</span>
+                            <span id="sell-price">$0</span>
                         </div>
-                        <div class="price-row total">
-                            <span>Total Price:</span>
-                            <span id="total-price">$0</span>
+                        <div class="price-row buy">
+                            <span>Buy Price:</span>
+                            <span id="buy-price">$0</span>
+                        </div>
+                        <div class="discount-info" id="discount-info" style="display: none;">
+                            Discount applied: 0%
                         </div>
                     </div>
                 </div>
                 
-                <div class="modal-actions">
-                    <button class="modal-btn secondary" id="cancel-sell">Cancel</button>
-                    <button class="modal-btn primary" id="confirm-sell">
-                        <i class="fas fa-handshake"></i>
-                        Confirm Sale
-                    </button>
+                <div class="modal-actions" id="modal-actions">
+                    <!-- Buttons will be dynamically populated based on config -->
                 </div>
             </div>
         </div>
