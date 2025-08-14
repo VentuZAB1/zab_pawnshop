@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech Pawn Exchange</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="pawnshop-container" class="hidden">
+        <div class="pawnshop-overlay"></div>
+        
+        <div class="pawnshop-main">
+            <!-- Header Section -->
+            <div class="pawnshop-header">
+                <div class="header-left">
+                    <div class="logo-container">
+                        <div class="logo-icon">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="logo-text">
+                            <h1 id="pawnshop-title">TECH PAWN EXCHANGE</h1>
+                            <span class="subtitle">PREMIUM TRADING TERMINAL</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <div class="status-indicator">
+                        <div class="status-dot"></div>
+                        <span>ONLINE</span>
+                    </div>
+                    <button class="close-btn" id="close-pawnshop">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="pawnshop-content">
+                <!-- Sidebar Categories -->
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h3>CATEGORIES</h3>
+                        <div class="category-line"></div>
+                    </div>
+                    
+                    <div class="categories-container" id="categories-list">
+                        <!-- Categories will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="sidebar-footer">
+                        <div class="quote-container">
+                            <div class="quote-icon">
+                                <i class="fas fa-quote-left"></i>
+                            </div>
+                            <div class="quote-text" id="seller-quote">
+                                Loading...
+                            </div>
+                            <div class="quote-author">- Pawnshop Owner</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Items Area -->
+                <div class="main-content">
+                    <div class="content-header">
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="item-search" placeholder="Search items...">
+                        </div>
+                        
+                        <div class="view-controls">
+                            <button class="view-btn active" data-view="grid">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button class="view-btn" data-view="list">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="items-container" id="items-container">
+                        <!-- Items will be populated by JavaScript -->
+                    </div>
+
+                    <div class="no-items-message hidden" id="no-items">
+                        <div class="no-items-icon">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <h3>No Items Available</h3>
+                        <p>You don't have any items that can be sold at this pawnshop.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <div class="action-left">
+                    <!-- Removed useless selection counter -->
+                </div>
+                
+                <div class="action-right">
+                    <button class="action-btn secondary" id="clear-selection">
+                        <i class="fas fa-times"></i>
+                        Clear Selection
+                    </button>
+                    <button class="action-btn primary" id="sell-selected">
+                        <i class="fas fa-handshake"></i>
+                        Sell Selected Items
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantity Modal -->
+        <div class="modal-overlay hidden" id="quantity-modal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Select Quantity</h3>
+                    <button class="modal-close" id="close-quantity-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-content">
+                    <div class="item-preview" id="modal-item-preview">
+                        <!-- Item preview will be populated -->
+                    </div>
+                    
+                    <div class="quantity-controls">
+                        <label for="quantity-input">Quantity to Sell</label>
+                        <div class="quantity-input-container">
+                            <button class="quantity-btn" id="quantity-decrease">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" id="quantity-input" min="1" max="1" value="1">
+                            <button class="quantity-btn" id="quantity-increase">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="quantity-info">
+                            <span>Available: <span id="available-quantity">0</span></span>
+                            <span>Max per transaction: <span id="max-quantity">0</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="price-preview">
+                        <div class="price-row">
+                            <span>Unit Price:</span>
+                            <span id="unit-price">$0</span>
+                        </div>
+                        <div class="price-row total">
+                            <span>Total Price:</span>
+                            <span id="total-price">$0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="modal-btn secondary" id="cancel-sell">Cancel</button>
+                    <button class="modal-btn primary" id="confirm-sell">
+                        <i class="fas fa-handshake"></i>
+                        Confirm Sale
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
