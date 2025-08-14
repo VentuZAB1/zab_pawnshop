@@ -51,6 +51,16 @@ ZAB Pawnshop transforms the traditional pawnshop experience with a cutting-edge 
 - **ox_inventory** - Seamless inventory integration
 - **ox_target** - Interactive targeting system
 
+## 📸 **Screenshots**
+
+<div align="center">
+
+| Modern Interface | Category System | Item Management |
+|:---:|:---:|:---:|
+| ![Interface](https://via.placeholder.com/300x200/8b45c1/ffffff?text=Modern+UI) | ![Categories](https://via.placeholder.com/300x200/9333ea/ffffff?text=Categories) | ![Items](https://via.placeholder.com/300x200/a855f7/ffffff?text=Items) |
+
+</div>
+
 ## 🚀 **Installation**
 
 ### Prerequisites
@@ -160,6 +170,13 @@ zab_pawnshop/
 └── README.md                # Documentation
 ```
 
+## 🔧 **Commands**
+
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `/pawnshop` | Open pawnshop interface | When near location |
+| `E` | Interact with pawnshop | Default key (configurable) |
+
 ## 🤝 **Contributing**
 
 We welcome contributions! Please:
@@ -206,6 +223,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **⭐ If you like this project, please give it a star! ⭐**
 
 Made with ❤️ for the FiveM community
-
 
 </div>

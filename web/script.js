@@ -34,14 +34,7 @@ class PawnshopUI {
             });
         });
 
-        // Action buttons
-        document.getElementById('clear-selection').addEventListener('click', () => {
-            this.clearSelection();
-        });
-
-        document.getElementById('sell-selected').addEventListener('click', () => {
-            this.sellSelectedItems();
-        });
+        // Action buttons removed - they didn't work properly
 
         // Modal controls
         document.getElementById('close-quantity-modal').addEventListener('click', () => {
@@ -344,14 +337,8 @@ class PawnshopUI {
         });
     }
 
-    clearSelection() {
-        this.selectedItems.clear();
-        this.updateItemSelection();
-        this.updateSelectionInfo();
-    }
-
     updateSelectionInfo() {
-        // Removed useless selection counter - buttons work fine without it
+        // Function kept for compatibility but does nothing now
     }
 
     updateViewControls() {
@@ -360,42 +347,7 @@ class PawnshopUI {
         });
     }
 
-    sellSelectedItems() {
-        if (this.selectedItems.size === 0) {
-            // Send message to client to show ox_lib notification
-            fetch(`https://${GetParentResourceName()}/showNotification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: 'Please select items to sell',
-                    type: 'warning'
-                })
-            });
-            return;
-        }
-
-        // For multiple items, sell them one by one
-        const selectedArray = Array.from(this.selectedItems);
-        this.sellItemsSequentially(selectedArray, 0);
-    }
-
-    sellItemsSequentially(items, index) {
-        if (index >= items.length) {
-            this.clearSelection();
-            return;
-        }
-
-        const itemName = items[index];
-        const item = this.items.find(i => i.item === itemName);
-        
-        if (item) {
-            this.sellItem(itemName, item.count, () => {
-                this.sellItemsSequentially(items, index + 1);
-            });
-        } else {
-            this.sellItemsSequentially(items, index + 1);
-        }
-    }
+    // Removed sellSelectedItems and sellItemsSequentially - didn't work properly
 
     openQuantityModal(item) {
         this.currentModalItem = item;
