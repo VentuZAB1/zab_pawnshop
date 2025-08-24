@@ -46,24 +46,32 @@ CreateThread(function()
         
         -- Alternative interaction with distance check
         local coords = location.coords
+        local textUIShown = false
         CreateThread(function()
             while true do
                 local playerCoords = GetEntityCoords(PlayerPedId())
                 local distance = #(playerCoords - coords)
                 
                 if distance < 3.0 then
-                    -- Show help text
-                    lib.showTextUI('[E] Open Pawnshop', {
-                        position = "top-center",
-                        icon = 'handshake'
-                    })
+                    if not textUIShown then
+                        -- Show help text
+                        lib.showTextUI('[E] Open Pawnshop', {
+                            position = "top-center",
+                            icon = 'handshake'
+                        })
+                        textUIShown = true
+                    end
                     
                     if IsControlJustReleased(0, 38) then -- E key
                         lib.hideTextUI()
+                        textUIShown = false
                         openPawnshop()
                     end
                 else
-                    lib.hideTextUI()
+                    if textUIShown then
+                        lib.hideTextUI()
+                        textUIShown = false
+                    end
                 end
                 
                 Wait(distance < 10.0 and 100 or 1000)
