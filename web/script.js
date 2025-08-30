@@ -6,7 +6,7 @@ class PawnshopUI {
         this.items = [];
         this.filteredItems = [];
         this.selectedItems = new Set();
-        this.currentCategory = 'all';
+        this.currentCategory = null; // Will be set to first available category
         this.currentView = 'grid';
         this.searchQuery = '';
         
@@ -137,7 +137,7 @@ class PawnshopUI {
     closePawnshop() {
         this.isOpen = false;
         this.selectedItems.clear();
-        this.currentCategory = 'all';
+        this.currentCategory = null; // Will be set to first available category
         this.searchQuery = '';
         
         // Clear quote rotation timer
@@ -168,26 +168,27 @@ class PawnshopUI {
         const container = document.getElementById('categories-list');
         container.innerHTML = '';
 
-        // Add "All" category
-        const allCategory = this.createCategoryElement({
-            id: 'all',
-            label: 'All Items',
-            icon: 'fas fa-th-large',
-            color: '#6b7280'
-        }, this.items.length);
-        
-        container.appendChild(allCategory);
+        let firstCategory = null;
 
         // Add configured categories (only enabled ones)
         this.config.categories.forEach(category => {
             if (category.enabled !== false) { // Show category if enabled is true or undefined
                 const count = this.items.filter(item => item.category === category.id).length;
                 if (count > 0) {
+                    // Set first available category as default
+                    if (!firstCategory) {
+                        firstCategory = category.id;
+                    }
                     const categoryElement = this.createCategoryElement(category, count);
                     container.appendChild(categoryElement);
                 }
             }
         });
+
+        // Set current category to first available if not set
+        if (!this.currentCategory && firstCategory) {
+            this.currentCategory = firstCategory;
+        }
     }
 
     createCategoryElement(category, count) {
@@ -222,7 +223,7 @@ class PawnshopUI {
 
     filterItems() {
         this.filteredItems = this.items.filter(item => {
-            const matchesCategory = this.currentCategory === 'all' || item.category === this.currentCategory;
+            const matchesCategory = !this.currentCategory || item.category === this.currentCategory;
             const matchesSearch = !this.searchQuery || 
                 item.label.toLowerCase().includes(this.searchQuery) ||
                 item.item.toLowerCase().includes(this.searchQuery);
@@ -457,16 +458,27 @@ class PawnshopUI {
         
         let sellTotal = sellPrice * quantity;
         let buyTotal = buyPrice * quantity;
-        let discountApplied = false;
+        let sellDiscountApplied = false;
+        let buyDiscountApplied = false;
         let discountPercent = 0;
         
-        // Check if bulk discount applies (only for selling)
-        if (this.config && this.config.bulkDiscount && this.config.bulkDiscount.enabled) {
+        // Check if bulk discount applies to selling
+        if (this.config && this.config.bulkDiscount && this.config.bulkDiscount.enabled && this.config.bulkDiscount.applyToSelling) {
             if (quantity >= this.config.bulkDiscount.itemsNeededForDiscount) {
                 discountPercent = this.config.bulkDiscount.discountPercent;
                 const discountAmount = sellTotal * discountPercent;
                 sellTotal = sellTotal - discountAmount;
-                discountApplied = true;
+                sellDiscountApplied = true;
+            }
+        }
+        
+        // Check if bulk discount applies to buying
+        if (this.config && this.config.bulkDiscount && this.config.bulkDiscount.enabled && this.config.bulkDiscount.applyToBuying) {
+            if (quantity >= this.config.bulkDiscount.itemsNeededForDiscount) {
+                discountPercent = this.config.bulkDiscount.discountPercent;
+                const discountAmount = buyTotal * discountPercent;
+                buyTotal = buyTotal - discountAmount;
+                buyDiscountApplied = true;
             }
         }
         
@@ -483,12 +495,14 @@ class PawnshopUI {
             }
         }
         
-        // Show/hide discount info
+        // Show/hide discount info - only show when buying is enabled
         const discountInfo = document.getElementById('discount-info');
         if (discountInfo) {
-            if (discountApplied) {
+            // Only show discount info if buying is enabled and a buy discount would apply
+            if (this.config?.enableBuying && buyDiscountApplied) {
                 const discountPercentText = Math.floor(discountPercent * 100);
-                discountInfo.textContent = `Discount applied: ${discountPercentText}%`;
+                let discountText = `Buy discount available: ${discountPercentText}%`;
+                discountInfo.textContent = discountText;
                 discountInfo.style.display = 'block';
             } else {
                 discountInfo.style.display = 'none';

@@ -7,7 +7,7 @@ Config.Currency = "cash" -- cash, bank, crypto
 -- Pawnshop Locations
 Config.Locations = {
     {
-        coords = vector3(182.6, -1319.7, 29.3),
+        coords = vector3(910.3431, 3652.9900, 32.6897),
         heading = 240.0,
         blip = {
             sprite = 431,
@@ -17,7 +17,7 @@ Config.Locations = {
         },
         ped = {
             model = "a_m_m_business_01",
-            coords = vector4(145.3458, -1336.5972, 29.2105, 8.3931)
+            coords = vector4(910.3431, 3652.9900, 32.6897, 186.5656)
         }
     }
 }
@@ -110,6 +110,92 @@ Config.Items = {
         maxQuantity = 10,
         category = "tools",
         image = "advancedlockpick.png"
+    },
+    
+    -- Miner Items
+    {
+        item = "gold",
+        label = "Gold Ore",
+        price = 45,
+        maxQuantity = 50,
+        category = "miner",
+        image = "gold.png"
+    },
+    {
+        item = "steel",
+        label = "Steel Ingot",
+        price = 35,
+        maxQuantity = 40,
+        category = "miner",
+        image = "steel.png"
+    },
+    {
+        item = "diamond",
+        label = "Raw Diamond",
+        price = 85,
+        maxQuantity = 20,
+        category = "miner",
+        image = "diamond.png"
+    },
+    {
+        item = "iron",
+        label = "Iron Ore",
+        price = 25,
+        maxQuantity = 60,
+        category = "miner",
+        image = "iron.png"
+    },
+    
+    -- Builder Items
+    {
+        item = "aluminum",
+        label = "Aluminum Sheet",
+        price = 40,
+        maxQuantity = 30,
+        category = "builder",
+        image = "aluminum.png"
+    },
+    {
+        item = "rubber",
+        label = "Rubber Material",
+        price = 15,
+        maxQuantity = 50,
+        category = "builder",
+        image = "rubber.png"
+    },
+    
+    -- Recycler Items
+    {
+        item = "copper",
+        label = "Copper Wire",
+        price = 20,
+        maxQuantity = 40,
+        category = "recycler",
+        image = "copper.png"
+    },
+    {
+        item = "metalscrap",
+        label = "Metal Scrap",
+        price = 12,
+        maxQuantity = 60,
+        category = "recycler",
+        image = "metalscrap.png"
+    },
+    {
+        item = "plastic",
+        label = "Plastic Waste",
+        price = 8,
+        maxQuantity = 80,
+        category = "recycler",
+        image = "plastic.png"
+    },
+    {
+        item = "glass",
+        label = "Glass Shards",
+        price = 10,
+        maxQuantity = 70,
+        category = "recycler",
+        image = "glass.png"
     }
 }
 
@@ -143,6 +229,27 @@ Config.Categories = {
         label = "Tools",
         icon = "fas fa-tools",
         color = "#7bed9f",
+        enabled = true -- Set to false to disable this category
+    },
+    {
+        id = "miner",
+        label = "Mining Materials",
+        icon = "fas fa-mountain",
+        color = "#ffa500",
+        enabled = true -- Set to false to disable this category
+    },
+    {
+        id = "builder",
+        label = "Construction Materials",
+        icon = "fas fa-hammer",
+        color = "#4169e1",
+        enabled = true -- Set to false to disable this category
+    },
+    {
+        id = "recycler",
+        label = "Recycled Materials",
+        icon = "fas fa-recycle",
+        color = "#32cd32",
         enabled = true -- Set to false to disable this category
     }
 }
@@ -183,11 +290,19 @@ Config.BulkDiscount = {
     enabled = true,                    -- Enable/disable bulk discount system
     itemsNeededForDiscount = 5,        -- Minimum items needed for discount
     discountPercent = 0.15,            -- Discount percentage (0.15 = 15% off)
-    showDiscountText = true            -- Show discount notification
+    showDiscountText = true,           -- Show discount notification
+    applyToSelling = false,            -- Apply discount when selling TO pawnshop
+    applyToBuying = true               -- Apply discount when buying FROM pawnshop
 }
 
 -- Pawnshop Features
 Config.EnableBuying = false -- Set to false to disable buying from pawnshop (sell-only mode)
+
+-- Interaction System Configuration
+Config.InteractionSystem = "ox_target" -- Options: "ox_target", "ox_lib", "both"
+-- ox_target: Uses targeting system (3D eye icon)
+-- ox_lib: Uses text UI with key press (E key)
+-- both: Uses both systems simultaneously (not recommended)
 
 -- Security Settings
 Config.MaxTransactionAmount = 10000 -- Maximum single transaction

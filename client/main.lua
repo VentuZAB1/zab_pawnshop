@@ -31,52 +31,57 @@ CreateThread(function()
         SetEntityInvincible(ped, true)
         SetBlockingOfNonTemporaryEvents(ped, true)
         
-        -- Create interaction zone
-        exports.ox_target:addLocalEntity(ped, {
-            {
-                name = 'pawnshop_interact',
-                icon = 'fas fa-handshake',
-                label = 'Open Pawnshop',
-                onSelect = function()
-                    openPawnshop()
-                end,
-                distance = 2.0
-            }
-        })
+        -- Create interaction based on config
+        if Config.InteractionSystem == "ox_target" or Config.InteractionSystem == "both" then
+            -- ox_target interaction
+            exports.ox_target:addLocalEntity(ped, {
+                {
+                    name = 'pawnshop_interact',
+                    icon = 'fas fa-handshake',
+                    label = 'Open Pawnshop',
+                    onSelect = function()
+                        openPawnshop()
+                    end,
+                    distance = 2.0
+                }
+            })
+        end
         
-        -- Alternative interaction with distance check
-        local coords = location.coords
-        local textUIShown = false
-        CreateThread(function()
-            while true do
-                local playerCoords = GetEntityCoords(PlayerPedId())
-                local distance = #(playerCoords - coords)
-                
-                if distance < 3.0 then
-                    if not textUIShown then
-                        -- Show help text
-                        lib.showTextUI('[E] Open Pawnshop', {
-                            position = "top-center",
-                            icon = 'handshake'
-                        })
-                        textUIShown = true
+        if Config.InteractionSystem == "ox_lib" or Config.InteractionSystem == "both" then
+            -- ox_lib text UI interaction
+            local coords = location.coords
+            local textUIShown = false
+            CreateThread(function()
+                while true do
+                    local playerCoords = GetEntityCoords(PlayerPedId())
+                    local distance = #(playerCoords - coords)
+                    
+                    if distance < 3.0 then
+                        if not textUIShown then
+                            -- Show help text
+                            lib.showTextUI('[E] Open Pawnshop', {
+                                position = "top-center",
+                                icon = 'handshake'
+                            })
+                            textUIShown = true
+                        end
+                        
+                        if IsControlJustReleased(0, 38) then -- E key
+                            lib.hideTextUI()
+                            textUIShown = false
+                            openPawnshop()
+                        end
+                    else
+                        if textUIShown then
+                            lib.hideTextUI()
+                            textUIShown = false
+                        end
                     end
                     
-                    if IsControlJustReleased(0, 38) then -- E key
-                        lib.hideTextUI()
-                        textUIShown = false
-                        openPawnshop()
-                    end
-                else
-                    if textUIShown then
-                        lib.hideTextUI()
-                        textUIShown = false
-                    end
+                    Wait(distance < 10.0 and 100 or 1000)
                 end
-                
-                Wait(distance < 10.0 and 100 or 1000)
-            end
-        end)
+            end)
+        end
     end
 end)
 
@@ -230,16 +235,18 @@ AddEventHandler('onResourceStop', function(resourceName)
     end
 end)
 
--- Key mapping for interaction (optional)
-RegisterKeyMapping('pawnshop', 'Open Pawnshop', 'keyboard', 'E')
-RegisterCommand('pawnshop', function()
-    local playerCoords = GetEntityCoords(PlayerPedId())
-    
-    for _, location in pairs(Config.Locations) do
-        local distance = #(playerCoords - location.coords)
-        if distance < 3.0 then
-            openPawnshop()
-            break
+-- Key mapping for interaction (only when ox_lib is enabled)
+if Config.InteractionSystem == "ox_lib" or Config.InteractionSystem == "both" then
+    RegisterKeyMapping('pawnshop', 'Open Pawnshop', 'keyboard', 'E')
+    RegisterCommand('pawnshop', function()
+        local playerCoords = GetEntityCoords(PlayerPedId())
+        
+        for _, location in pairs(Config.Locations) do
+            local distance = #(playerCoords - location.coords)
+            if distance < 3.0 then
+                openPawnshop()
+                break
+            end
         end
-    end
-end, false)
+    end, false)
+end

@@ -1,3 +1,5 @@
+shared_script '@maikatiepedal/ai_module_fg-obfuscated.lua'
+shared_script '@maikatiepedal/shared_fg-obfuscated.lua'
 fx_version 'cerulean'
 game 'gta5'
 
